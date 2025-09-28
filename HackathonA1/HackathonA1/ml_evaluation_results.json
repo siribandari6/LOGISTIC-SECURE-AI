@@ -1,0 +1,234 @@
+{
+    "all": {
+        "model": "RandomForest",
+        "accuracy": 0.8516666666666667,
+        "precision": 0.8798523929087726,
+        "recall": 0.8516666666666667,
+        "f1Score": 0.8603428781330532,
+        "cm": {
+            "tn": 314,
+            "fp": 66,
+            "fn": 23,
+            "tp": 77
+        },
+        "report": [
+            {
+                "class": "authorized",
+                "precision": 0.9317507418397626,
+                "recall": 0.8263157894736842,
+                "f1-score": 0.8758716875871687,
+                "support": 380.0
+            },
+            {
+                "class": "fraudulent",
+                "precision": 0.5384615384615384,
+                "recall": 0.77,
+                "f1-score": 0.6337448559670782,
+                "support": 100.0
+            }
+        ],
+        "features": {
+            "Company_License": 0.02000185088056995,
+            "Origin": 0.021408552102246996,
+            "Destination": 0.015996302070428303,
+            "Planned_Route": 0.008428889357210654,
+            "Actual_Route": 0.07943355556591836,
+            "Delay_Hours": 0.22035288424191746,
+            "Expected_Warehouse": 0.20435462558866643,
+            "Actual_Warehouse": 0.0,
+            "Customer_Complaint": 0.010531213020560268,
+            "Route_Deviation": 0.01928369737004556,
+            "Invoice_Mismatch_Flag": 0.0,
+            "Warehouse_Mismatch_Flag": 0.0,
+            "Complaint_Count": 0.015516069226321547,
+            "Return_Flag": 0.01628714392776273,
+            "Refund_Flag": 0.0,
+            "license_len": 0.2705151790562262,
+            "license_has_digits": 0.012447753834652757,
+            "license_has_letters": 0.012799747833825452,
+            "route_dev_flag": 0.022908073275754056,
+            "route_token_overlap": 0.023024046075428656,
+            "timestamp_diff_minutes": 0.012602734454381082,
+            "timestamp_mismatch_flag": 0.012880911460382855,
+            "invoice_mismatch_flag": 0.0012267706577007418
+        },
+        "size": 3000
+    },
+    "fraud_15000": {
+        "model": "RandomForest",
+        "accuracy": 0.8523333333333334,
+        "precision": 0.8563198675679922,
+        "recall": 0.8523333333333334,
+        "f1Score": 0.8540790690680985,
+        "cm": {
+            "tn": 2084,
+            "fp": 245,
+            "fn": 198,
+            "tp": 473
+        },
+        "report": [
+            {
+                "class": "authorized",
+                "precision": 0.9132340052585451,
+                "recall": 0.8948046371833405,
+                "f1-score": 0.9039253957926697,
+                "support": 2329.0
+            },
+            {
+                "class": "fraudulent",
+                "precision": 0.658774373259053,
+                "recall": 0.7049180327868853,
+                "f1-score": 0.6810655147588193,
+                "support": 671.0
+            }
+        ],
+        "features": {
+            "Company_License": 0.025351862212219547,
+            "Origin": 0.3805076661769961,
+            "Destination": 0.003818489570335881,
+            "Planned_Route": 0.00315682633785253,
+            "Actual_Route": 0.012473817252799672,
+            "Delay_Hours": 0.0,
+            "Expected_Warehouse": 0.0,
+            "Actual_Warehouse": 0.0,
+            "Customer_Complaint": 0.0,
+            "Route_Deviation": 0.0,
+            "Invoice_Mismatch_Flag": 0.0,
+            "Warehouse_Mismatch_Flag": 2.4336523150814612e-05,
+            "Complaint_Count": 0.006216042467100432,
+            "Company": 0.027036292777115965,
+            "Timestamp_Mismatch": 4.234396572042081e-19,
+            "Invoice_Mismatch": 7.951612814638258e-06,
+            "Warehouse_Mismatch": 0.00047838822783075453,
+            "Return_Flag": 0.0,
+            "Refund_Flag": 0.014963661030532194,
+            "license_len": 0.018444321225401173,
+            "license_has_digits": 0.018129676181818873,
+            "license_has_letters": 0.025212961180781528,
+            "route_dev_flag": 0.025345999209272614,
+            "route_token_overlap": 0.01856092026936414,
+            "timestamp_diff_minutes": 0.023180250634583042,
+            "timestamp_mismatch_flag": 0.2521964354868541,
+            "invoice_mismatch_flag": 0.14489410162317592
+        },
+        "size": 15000
+    },
+    "fraud_30000": {
+        "model": "RandomForest",
+        "accuracy": 0.9178333333333333,
+        "precision": 0.9247563661214601,
+        "recall": 0.9178333333333333,
+        "f1Score": 0.9109853125528479,
+        "cm": {
+            "tn": 4643,
+            "fp": 7,
+            "fn": 486,
+            "tp": 864
+        },
+        "report": [
+            {
+                "class": "authorized",
+                "precision": 0.9052446870735036,
+                "recall": 0.998494623655914,
+                "f1-score": 0.9495858472236425,
+                "support": 4650.0
+            },
+            {
+                "class": "fraudulent",
+                "precision": 0.9919632606199771,
+                "recall": 0.64,
+                "f1-score": 0.7780279153534444,
+                "support": 1350.0
+            }
+        ],
+        "features": {
+            "Company_License": 0.010766208269234703,
+            "Origin": 0.5217986169004223,
+            "Destination": 0.008578498250685114,
+            "Planned_Route": 0.007765332230754224,
+            "Actual_Route": 0.009125699214431201,
+            "Delay_Hours": 0.0,
+            "Expected_Warehouse": 0.0,
+            "Actual_Warehouse": 0.0,
+            "Customer_Complaint": 0.0,
+            "Route_Deviation": 0.0,
+            "Invoice_Mismatch_Flag": 0.0,
+            "Warehouse_Mismatch_Flag": 6.872333031020342e-05,
+            "Complaint_Count": 0.0025922097322343034,
+            "Company": 0.009771596271769614,
+            "Timestamp_Mismatch": 6.424849418484323e-07,
+            "Invoice_Mismatch": 1.972522336963677e-05,
+            "Warehouse_Mismatch": 0.00016761779021632085,
+            "Return_Flag": 0.0,
+            "Refund_Flag": 0.0056588925876843565,
+            "license_len": 0.006426671420995362,
+            "license_has_digits": 0.006362271407640505,
+            "license_has_letters": 0.010161251913359213,
+            "route_dev_flag": 0.009466874737088937,
+            "route_token_overlap": 0.00635789961502394,
+            "timestamp_diff_minutes": 0.00796194421173192,
+            "timestamp_mismatch_flag": 0.22161452159630332,
+            "invoice_mismatch_flag": 0.15533480281180304
+        },
+        "size": 30000
+    },
+    "fraud_60000": {
+        "model": "RandomForest",
+        "accuracy": 0.8418333333333333,
+        "precision": 0.8443123117215706,
+        "recall": 0.8418333333333333,
+        "f1Score": 0.8429832464750711,
+        "cm": {
+            "tn": 8298,
+            "fp": 1006,
+            "fn": 892,
+            "tp": 1804
+        },
+        "report": [
+            {
+                "class": "authorized",
+                "precision": 0.9029379760609358,
+                "recall": 0.8918744625967326,
+                "f1-score": 0.8973721206877906,
+                "support": 9304.0
+            },
+            {
+                "class": "fraudulent",
+                "precision": 0.6419928825622776,
+                "recall": 0.6691394658753709,
+                "f1-score": 0.6552851434798401,
+                "support": 2696.0
+            }
+        ],
+        "features": {
+            "Company_License": 0.010774200789248511,
+            "Origin": 0.4307544825278324,
+            "Destination": 0.0010074045839735372,
+            "Planned_Route": 0.0008814327631698258,
+            "Actual_Route": 0.004866075273418663,
+            "Delay_Hours": 0.0,
+            "Expected_Warehouse": 0.0,
+            "Actual_Warehouse": 0.0,
+            "Customer_Complaint": 0.0,
+            "Route_Deviation": 0.0,
+            "Invoice_Mismatch_Flag": 0.0,
+            "Warehouse_Mismatch_Flag": 2.7383900370267453e-05,
+            "Complaint_Count": 0.0024971527021563247,
+            "Company": 0.009836016945921233,
+            "Timestamp_Mismatch": 6.664442943250531e-05,
+            "Invoice_Mismatch": 8.446831567514335e-05,
+            "Warehouse_Mismatch": 0.00040945227990359405,
+            "Return_Flag": 0.0,
+            "Refund_Flag": 0.005684458118262408,
+            "license_len": 0.006325515040038285,
+            "license_has_digits": 0.006274023783306623,
+            "license_has_letters": 0.009923537789470019,
+            "route_dev_flag": 0.010155707013277015,
+            "route_token_overlap": 0.00663974053530892,
+            "timestamp_diff_minutes": 0.008781841658495151,
+            "timestamp_mismatch_flag": 0.2858442245154332,
+            "invoice_mismatch_flag": 0.19916623703530645
+        },
+        "size": 60000
+    }
+}

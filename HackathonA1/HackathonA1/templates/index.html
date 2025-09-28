@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LogisticSecureAI - Smart Logistics Fraud Detection</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0d1117;
+            color: #c9d1d9;
+        }
+        .hero-section {
+            /* This new URL provides a different background image */
+            background-image: linear-gradient(rgba(13, 17, 23, 0.4), rgba(13, 17, 23, 1)), url("static/images/bg6.jpg");
+            background-size: cover;
+            background-position: center;
+        }
+        .stat-card, .kpi-card, .chart-container, .summary-table-container {
+             background-color: #161b22;
+             border: 1px solid #30363d;
+        }
+        .search-tag {
+            border: 1px solid #30363d;
+            transition: background-color 0.3s;
+        }
+        .search-tag:hover {
+            background-color: #30363d;
+        }
+        .validate-btn, .download-btn, .ml-btn {
+            background-color: #30363d;
+            border: 1px solid #4d545c;
+            transition: background 0.3s, transform 0.2s, border-color 0.3s, color 0.3s;
+        }
+        .validate-btn:hover, .download-btn:hover, .ml-btn:hover {
+             background: linear-gradient(90deg, #f97316, #ef4444);
+             transform: scale(1.05);
+             border-color: transparent;
+             color: white;
+        }
+        .autocomplete-suggestions {
+            border: 1px solid #30363d;
+            border-top: none;
+            max-height: 150px;
+            overflow-y: auto;
+            background-color: #161b22;
+            position: absolute;
+            width: 100%;
+            z-index: 10;
+        }
+        .suggestion-item { padding: 10px; cursor: pointer; }
+        .suggestion-item:hover { background-color: #30363d; }
+        .error-message { color: #ef4444; font-size: 0.875rem; margin-top: 0.5rem; }
+        .kpi-value.positive { color: #22c55e; }
+        .kpi-value.negative { color: #ef4444; }
+        .kpi-value.neutral { color: #eab308; }
+        .risk-low { background-color: rgba(34, 197, 94, 0.1); color: #22c55e; }
+        .risk-medium { background-color: rgba(234, 179, 8, 0.1); color: #eab308; }
+        .risk-high { background-color: rgba(249, 115, 22, 0.1); color: #f97316; }
+        .risk-critical { background-color: rgba(239, 68, 68, 0.1); color: #ef4444; }
+        #shipment-filter, #ml-dataset-filter {
+            background-color: #0d1117;
+            border: 1px solid #30363d;
+        }
+        .chart-container {
+            position: relative;
+            height: 400px; 
+            width: 100%;
+        }
+        .letter-hover {
+            display: inline-block;
+            transition: color 0.2s ease-in-out;
+        }
+        .letter-hover:hover {
+            color: #f97316;
+        }
+        .confusion-matrix .cell {
+            border: 1px solid #30363d;
+        }
+        .confusion-matrix .header {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            font-weight: 600;
+            color: #8b949e;
+        }
+        #tracking-section {
+             background-image: linear-gradient(rgba(13, 17, 23, 0.95), rgba(13, 17, 23, 0.98)), url('https://images.unsplash.com/photo-1578574577315-3f16ce76751b?q=80&w=2070&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+            position: relative;
+        }
+        .news-card {
+            position: relative;
+            overflow: hidden;
+            border-radius: 0.5rem;
+            background-color: #161b22;
+            height: 12rem; /* 192px */
+        }
+        .news-card img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease-in-out;
+        }
+        .news-card:hover img {
+            transform: scale(1.05);
+        }
+        .news-card-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+        }
+        .news-card-content {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            padding: 1rem;
+        }
+         .news-card-description {
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+            max-height: 0;
+            overflow: hidden;
+        }
+        .news-card:hover .news-card-description {
+            opacity: 1;
+            max-height: 100px; /* Adjust as needed */
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div id="main-content">
+        <header class="absolute top-0 left-0 right-0 z-10 pt-4 px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center border-b border-white/20 pb-4">
+                <h1 class="text-2xl font-bold text-white">Logistic<span class="text-orange-500">Secure</span>AI</h1>
+                <button id="ml-insights-btn" class="ml-btn text-gray-300 font-semibold py-2 px-4 rounded-md flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v2a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M12 22a3 3 0 0 0 3-3v-2a3 3 0 0 0-6 0v2a3 3 0 0 0 3 3Z"/><path d="M20 12a3 3 0 0 0-3-3h-2a3 3 0 0 0 0 6h2a3 3 0 0 0 3-3Z"/><path d="M4 12a3 3 0 0 0 3 3h2a3 3 0 0 0 0-6H7a3 3 0 0 0-3 3Z"/></svg>
+                    Machine Learning
+                </button>
+            </div>
+        </header>
+
+        <main>
+            <section class="hero-section flex items-center justify-center min-h-screen">
+                <div class="container mx-auto text-center px-4">
+                    <h2 id="hero-title-1" class="text-4xl md:text-6xl font-black text-white uppercase tracking-wider">Smart Logistics</h2>
+                    <h3 id="hero-title-2" class="text-4xl md:text-6xl font-black text-gray-200 uppercase tracking-wider mt-2"> Fraud Identification</h3>
+                    <p class="mt-6 max-w-2xl mx-auto text-lg text-gray-300">Advanced AI monitors your shipments in real-time, detecting fraudulent activities before they impact your business operations.</p>
+                </div>
+            </section>
+
+            <section id="tracking-section" class="py-8">
+                <hr class="border-white/20" />
+                <div class="container mx-auto px-4 pt-8">
+                    <div class="text-center">
+                        <h3 id="global-tracking-title" class="text-3xl font-bold text-white">Global Shipment Tracking</h3>
+                        <p class="mt-2 text-gray-400 max-w-xl mx-auto">Search and analyze fraud patterns for any company in our network.</p>
+                        <div class="mt-8 max-w-2xl mx-auto relative">
+                             <div class="flex items-center gap-4">
+                                <input type="text" id="company-search" placeholder="Enter Company Name..." class="w-full bg-[#161b22] border border-[#30363d] rounded-md py-3 px-4 text-white focus:outline-none focus:ring-2 focus:ring-orange-500">
+                                <button id="validate-btn" class="validate-btn text-white font-bold py-3 px-8 rounded-md shadow-lg flex-shrink-0">VALIDATE</button>
+                            </div>
+                            <div id="autocomplete-container" class="autocomplete-suggestions rounded-b-md text-left"></div>
+                            <p id="error-message" class="error-message text-left"></p>
+                        </div>
+                        <div id="popular-searches" class="mt-4 flex items-center justify-center gap-2 flex-wrap text-sm">
+                            <span class="text-gray-400 mr-2">Popular searches:</span>
+                            <button id="list-all-btn" class="search-tag text-xs py-1 px-3 rounded-full font-semibold">List of Companies</button>
+                        </div>
+                         <div id="analysis-keywords" class="mt-4 flex items-center justify-center gap-2 flex-wrap text-sm">
+                            <span class="text-gray-400 mr-2">Analysis types:</span>
+                        </div>
+                    </div>
+                    <div class="mt-16">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="kpi-card rounded-lg p-6">
+                                <h3 class="text-lg font-semibold text-white mb-4 text-center">Risk Analysis by Route Deviations</h3>
+                                <div class="chart-container"><canvas id="risk-by-route-chart"></canvas></div>
+                            </div>
+                            <div class="kpi-card rounded-lg p-6">
+                                <h3 class="text-lg font-semibold text-white mb-4 text-center">Fraud Type Distribution</h3>
+                                <div class="chart-container"><canvas id="fraud-type-distribution-chart"></canvas></div>
+                            </div>
+                        </div>
+                        <div class="mt-6 stat-card rounded-lg p-4">
+                             <h4 class="text-white font-semibold text-lg mb-4">LIVE ALERTS</h4>
+                             <div id="news-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 h-[450px] overflow-y-auto pr-2">
+                                <p id="loading-state" class="col-span-full">Loading latest logistics news...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="insights-section" class="hidden">
+        <header class="bg-[#161b22] shadow-md sticky top-0 z-20">
+            <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-16">
+                    <div class="flex items-center"><h1 class="text-2xl font-bold text-white">Logistic<span class="text-orange-500">Secure</span>AI</h1></div>
+                    <div id="company-header" class="text-lg font-semibold text-gray-300"></div>
+                    <button class="back-to-main-btn validate-btn text-white font-bold py-2 px-6 rounded-md shadow-lg">Back</button>
+                </div>
+            </nav>
+        </header>
+
+        <main class="container mx-auto p-4 sm:p-6 lg:p-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                <div class="kpi-card rounded-lg p-5"><h3 id="auth-status-label" class="text-sm font-medium text-gray-400">Authorization Status</h3><p id="auth-status" class="kpi-value mt-1 text-3xl font-semibold">N/A</p></div>
+                <div class="kpi-card rounded-lg p-5"><h3 class="text-sm font-medium text-gray-400">Route Adherence</h3><p id="route-adherence" class="kpi-value mt-1 text-3xl font-semibold">0%</p></div>
+                <div class="kpi-card rounded-lg p-5"><h3 class="text-sm font-medium text-gray-400">On-Time Delivery</h3><p id="on-time-delivery" class="kpi-value mt-1 text-3xl font-semibold">0%</p></div>
+                <div class="kpi-card rounded-lg p-5"><h3 class="text-sm font-medium text-gray-400">Invoice Accuracy</h3><p id="invoice-accuracy" class="kpi-value mt-1 text-3xl font-semibold">0%</p></div>
+                <div class="kpi-card rounded-lg p-5"><h3 class="text-sm font-medium text-gray-400">Inventory Accuracy</h3><p id="inventory-accuracy" class="kpi-value mt-1 text-3xl font-semibold">0%</p></div>
+                <div class="kpi-card rounded-lg p-5"><h3 class="text-sm font-medium text-gray-400">Complaint Rate</h3><p id="complaint-rate" class="kpi-value mt-1 text-3xl font-semibold">0%</p></div>
+            </div>
+             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <div class="kpi-card rounded-lg p-6"><h3 class="text-lg font-semibold text-white mb-4 text-center">Shipment Integrity</h3><div class="chart-container"><canvas id="fraud-pie-chart"></canvas></div></div>
+                <div class="kpi-card rounded-lg p-6"><h3 class="text-lg font-semibold text-white mb-4 text-center">Operational Issues Breakdown</h3><div class="chart-container"><canvas id="incident-bar-chart"></canvas></div></div>
+            </div>
+            <div class="kpi-card rounded-lg p-6 mb-8">
+                <h3 class="text-lg font-semibold text-white mb-4 text-center">Monthly Fraud Trend</h3>
+                <div class="chart-container"><canvas id="fraud-line-chart"></canvas></div>
+            </div>
+            <div class="kpi-card rounded-lg p-6 mb-8">
+                <h3 class="text-lg font-semibold text-white mb-4 text-center">Monthly Operational Issues Trend</h3>
+                <div class="chart-container"><canvas id="issues-line-chart"></canvas></div>
+            </div>
+            <div class="kpi-card rounded-lg p-5">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-white">Shipment Details</h3>
+                    <select id="shipment-filter" class="rounded-md py-1 px-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        <option value="all">All Shipments</option>
+                        <option value="fraudulent">Fraudulent Only</option>
+                        <option value="authorized">Authorized Only</option>
+                        <option value="best-rated">Best Rated</option>
+                    </select>
+                </div>
+                <div class="overflow-x-auto max-h-96">
+                    <table class="min-w-full divide-y divide-[#30363d]">
+                        <thead class="bg-[#0d1117] sticky top-0"><tr class="text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                            <th class="px-6 py-3">Shipment ID</th><th class="px-6 py-3">Date</th><th class="px-6 py-3">Origin</th><th class="px-6 py-3">Destination</th><th class="px-6 py-3">Status</th>
+                        </tr></thead>
+                        <tbody id="shipments-table-body" class="bg-[#161b22] divide-y divide-[#30363d]"></tbody>
+                    </table>
+                </div>
+                <div class="mt-6 flex justify-end gap-4">
+                    <button id="download-pdf-btn" class="download-btn text-white font-bold py-2 px-6 rounded-md shadow-lg">Download PDF Report</button>
+                    <button id="download-csv-btn" class="download-btn text-white font-bold py-2 px-6 rounded-md shadow-lg">Download CSV</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="all-companies-section" class="hidden">
+        <header class="bg-[#161b22] shadow-md sticky top-0 z-20">
+             <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-16">
+                    <div class="flex items-center"><h1 class="text-2xl font-bold text-white">Logistic<span class="text-orange-500">Secure</span>AI</h1></div>
+                    <div class="text-lg font-semibold text-gray-300">All Companies Risk Overview</div>
+                    <button class="back-to-main-btn validate-btn text-white font-bold py-2 px-6 rounded-md shadow-lg">Back</button>
+                </div>
+            </nav>
+        </header>
+        <main class="container mx-auto p-4 sm:p-6 lg:p-8">
+            <div class="summary-table-container rounded-lg p-5">
+                 <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-[#30363d]">
+                        <thead class="bg-[#0d1117]"><tr class="text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                            <th class="px-6 py-3">Company Name</th>
+                            <th class="px-6 py-3">Authorization Status</th>
+                            <th class="px-6 py-3">Fraud %</th>
+                            <th class="px-6 py-3">Risk Status</th>
+                            <th class="px-6 py-3">Service Reliability</th>
+                        </tr></thead>
+                        <tbody id="all-companies-table-body" class="bg-[#161b22] divide-y divide-[#30363d]"></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="analysis-section" class="hidden">
+        <header class="bg-[#161b22] shadow-md sticky top-0 z-20">
+             <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-16">
+                    <div class="flex items-center"><h1 class="text-2xl font-bold text-white">Logistic<span class="text-orange-500">Secure</span>AI</h1></div>
+                    <div id="analysis-header" class="text-lg font-semibold text-gray-300">Analysis Overview</div>
+                    <button class="back-to-main-btn validate-btn text-white font-bold py-2 px-6 rounded-md shadow-lg">Back</button>
+                </div>
+            </nav>
+        </header>
+        <main class="container mx-auto p-4 sm:p-6 lg:p-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                 <div class="kpi-card rounded-lg p-6">
+                    <h3 id="analysis-pie-chart-title" class="text-lg font-semibold text-white mb-4 text-center">Breakdown</h3>
+                    <div class="chart-container"><canvas id="analysis-pie-chart"></canvas></div>
+                </div>
+                <div class="kpi-card rounded-lg p-6">
+                    <h3 id="analysis-bar-chart-title" class="text-lg font-semibold text-white mb-4 text-center">Top Offenders</h3>
+                    <div class="chart-container"><canvas id="analysis-bar-chart"></canvas></div>
+                </div>
+            </div>
+            <div class="summary-table-container rounded-lg p-5">
+                 <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-[#30363d]">
+                        <thead id="analysis-table-head" class="bg-[#0d1117]"></thead>
+                        <tbody id="analysis-table-body" class="bg-[#161b22] divide-y divide-[#30363d]"></tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <div id="ml-insights-section" class="hidden">
+        <header class="bg-[#161b22] shadow-md sticky top-0 z-20">
+             <nav class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-16">
+                    <div class="flex items-center"><h1 class="text-2xl font-bold text-white">Logistic<span class="text-orange-500">Secure</span>AI</h1></div>
+                    <div class="flex items-center gap-4">
+                        <label for="ml-dataset-filter" class="text-sm font-medium text-gray-400">Model:</label>
+                        <select id="ml-dataset-filter" class="rounded-md py-1 px-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            <option value="all">Classification (All Companies)</option>
+                            <option value="fraud_15000">Fraud Data 15000</option>
+                            <option value="fraud_30000">Fraud Data 30000</option>
+                            <option value="fraud_60000">Fraud Data 60000</option>
+                        </select>
+                    </div>
+                    <button class="back-to-main-btn validate-btn text-white font-bold py-2 px-6 rounded-md shadow-lg">Back</button>
+                </div>
+            </nav>
+        </header>
+        <main id="ml-main-content" class="container mx-auto p-4 sm:p-6 lg:p-8">
+            <div id="ml-classification-view">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+                    <div class="kpi-card rounded-lg p-5 text-center"><h3 class="text-sm font-medium text-gray-400">Dataset Size</h3><p id="ml-dataset-size" class="kpi-value neutral mt-1 text-4xl font-semibold">0</p></div>
+                    <div class="kpi-card rounded-lg p-5 text-center"><h3 class="text-sm font-medium text-gray-400">Accuracy</h3><p id="ml-accuracy" class="kpi-value positive mt-1 text-4xl font-semibold">0%</p></div>
+                    <div class="kpi-card rounded-lg p-5 text-center"><h3 class="text-sm font-medium text-gray-400">Precision</h3><p id="ml-precision" class="kpi-value positive mt-1 text-4xl font-semibold">0%</p></div>
+                    <div class="kpi-card rounded-lg p-5 text-center"><h3 class="text-sm font-medium text-gray-400">Recall</h3><p id="ml-recall" class="kpi-value positive mt-1 text-4xl font-semibold">0%</p></div>
+                    <div class="kpi-card rounded-lg p-5 text-center"><h3 class="text-sm font-medium text-gray-400">F1-Score</h3><p id="ml-f1-score" class="kpi-value positive mt-1 text-4xl font-semibold">0%</p></div>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <div class="kpi-card rounded-lg p-6">
+                        <h3 class="text-lg font-semibold text-white mb-4 text-center">Confusion Matrix</h3>
+                        <div class="confusion-matrix grid grid-cols-3 gap-1 text-center text-white">
+                            <div></div><div class="header p-2">Predicted Auth.</div><div class="header p-2">Predicted Fraud</div>
+                            <div class="header p-2 self-center">Actual Auth.</div>
+                            <div id="cm-tn" class="cell p-6 rounded-md bg-blue-500/20"><div class="text-3xl font-bold">0</div><div class="text-xs text-blue-300">True Negative</div></div>
+                            <div id="cm-fp" class="cell p-6 rounded-md bg-orange-500/20"><div class="text-3xl font-bold">0</div><div class="text-xs text-orange-300">False Positive</div></div>
+                            <div class="header p-2 self-center">Actual Fraud</div>
+                            <div id="cm-fn" class="cell p-6 rounded-md bg-orange-500/20"><div class="text-3xl font-bold">0</div><div class="text-xs text-orange-300">False Negative</div></div>
+                            <div id="cm-tp" class="cell p-6 rounded-md bg-green-500/20"><div class="text-3xl font-bold">0</div><div class="text-xs text-green-300">True Positive</div></div>
+                        </div>
+                    </div>
+                    <div class="kpi-card rounded-lg p-6">
+                        <h3 class="text-lg font-semibold text-white mb-4 text-center">Feature Importance</h3>
+                        <div class="chart-container"><canvas id="feature-importance-chart"></canvas></div>
+                    </div>
+                </div>
+                 <div class="summary-table-container rounded-lg p-5">
+                     <h3 class="text-lg font-semibold text-white mb-4">Classification Report</h3>
+                     <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-[#30363d]">
+                            <thead class="bg-[#0d1117]"><tr class="text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                <th class="px-6 py-3">Class</th>
+                                <th class="px-6 py-3">Precision</th>
+                                <th class="px-6 py-3">Recall</th>
+                                <th class="px-6 py-3">F1-Score</th>
+                                <th class="px-6 py-3">Support</th>
+                            </tr></thead>
+                            <tbody id="classification-report-body" class="bg-[#161b22] divide-y divide-[#30363d]"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            </main>
+    </div>
+
+    <script>
+        // State variables
+        let pieChartInstance, barChartInstance, lineChartInstance, issuesLineChartInstance;
+        let analysisPieChartInstance, analysisBarChartInstance, featureImportanceChartInstance;
+        let riskByRouteChartInstance, fraudTypeDistChartInstance;
+        // Clustering chart instances removed
+        let ALL_COMPANIES_DATA = [];
+        let currentCompanyData = [];
+        let currentCompanyName = '';
+
+        const CHART_COLORS = ['#0284c7', '#ef4444', '#a855f7', '#db2777', '#f97316', '#10b981', '#facc15'];
+
+        // This is the data generation function from your file
+        // It will power the main dashboard charts, as you requested.
+        function generateData() {
+            const companyNames = [ 'Blue Dart', 'Delhivery', 'Ecom Express', 'Gati', 'DTDC', 'FedEx India', 'DHL Express India', 'VRL Logistics', 'TCI Express', 'Allcargo', 'Safexpress', 'Rivigo', 'Mahindra Logistics', 'Snowman Logistics', 'Om Logistics', 'Sical', 'Gateway Distriparks', 'RedExpress Logistics', 'Sparex Couriers', 'Aparna Freight', 'Karla Transports', 'Shree Logistics', 'Vijay Packers', 'National Cargo', 'Prime Couriers', 'UrbanMove Logistics', 'ExpressWays', 'RapidShip India', 'Himalayan Transporters', 'Coastal Cargo' ];
+            const unauthorizedCompanies = [ "Delhivery", "Ecom Express", "Gateway Distriparks", "Mahindra Logistics", "RedExpress Logistics", "Rivigo" ];
+            const data = [];
+            const complaints = ["No Complaint", "Late Delivery", "Damaged Goods", "Missing Items"];
+            const locations = ["Mumbai", "Delhi", "Kolkata", "Chennai", "Bengaluru", "Hyderabad", "Pune", "Ahmedabad"];
+           
+            companyNames.forEach((name, index) => {
+                const isUnauthorized = unauthorizedCompanies.includes(name);
+                const baseFraudRate = isUnauthorized ? 0.45 : 0.05 + (index * 0.002); 
+                for (let i = 0; i < 100; i++) {
+                    const id = `${name.slice(0,3).toUpperCase()}-${Math.random().toString(36).substring(2, 9)}`;
+                    const origin = locations[Math.floor(Math.random() * locations.length)];
+                    let destination = locations[Math.floor(Math.random() * locations.length)];
+                    while(destination === origin) { destination = locations[Math.floor(Math.random() * locations.length)]; }
+                    const month = Math.floor(Math.random() * 12);
+                    const date = new Date(2023, month, Math.floor(Math.random() * 28) + 1);
+                    const record = {
+                        Company_Name: name, Company_License: isUnauthorized ? "N/A" : `LIC-${1010 + index*2}`, Shipment_ID: id, Date: date.toISOString().split('T')[0], Origin: origin, Destination: destination, Planned_Route: `${origin} -> ${destination}`, Actual_Route: `${origin} -> ${destination}`, Planned_Timestamp: date.toISOString(), Actual_Timestamp: date.toISOString(), Generated_Invoice_ID: `INV-${id}`, Delivered_Invoice_ID: `INV-${id}`, Expected_Warehouse: `${destination}_WH`, Actual_Warehouse: `${destination}_WH`, Customer_Complaint: "No Complaint", True_Label: "authorized"
+                    };
+                    if (Math.random() < 0.15 + baseFraudRate) record.Actual_Route = `${origin} -> Someplace Else -> ${destination}`;
+                    if (Math.random() < 0.20 + baseFraudRate) { const newDate = new Date(date); newDate.setHours(newDate.getHours() + 8); record.Actual_Timestamp = newDate.toISOString(); }
+                    if (Math.random() < 0.08 + baseFraudRate) record.Delivered_Invoice_ID = `INV-WRONG-${id}`;
+                    if (Math.random() < 0.12 + baseFraudRate) record.Actual_Warehouse = `Wrong_${destination}_WH`;
+                    if (Math.random() < 0.10 + baseFraudRate) record.Customer_Complaint = complaints[Math.floor(Math.random() * (complaints.length -1)) + 1];
+                    if (Math.random() < baseFraudRate) record.True_Label = "fraudulent";
+                    data.push(record);
+                }
+            });
+            return data;
+        }
+
+        // DOMContentLoaded Initializer
+        document.addEventListener('DOMContentLoaded', function() {
+            ALL_COMPANIES_DATA = generateData(); // Using the original data generator
+            Chart.register(ChartDataLabels);
+            setupEventListeners();
+            fetchNews();
+            setupLetterHoverEffect();
+            setupMainDashboardCharts();
+        });
+        
+        function setupEventListeners() {
+            setupAutocomplete();
+            setupPopularSearches();
+            setupValidation();
+            setupBackButton();
+            setupAllCompaniesButton();
+            setupAnalysisKeywords();
+            document.getElementById('ml-insights-btn').addEventListener('click', () => showMlInsights('all'));
+            document.getElementById('ml-dataset-filter').addEventListener('change', (e) => showMlInsights(e.target.value));
+            document.getElementById('shipment-filter').addEventListener('change', () => displayTable(currentCompanyData));
+            document.getElementById('download-pdf-btn').addEventListener('click', downloadPDF);
+            document.getElementById('download-csv-btn').addEventListener('click', downloadCSV);
+        }
+
+        function setupLetterHoverEffect() {
+            function wrapLetters(selector) {
+                const element = document.querySelector(selector);
+                if (element) { const text = element.textContent; element.innerHTML = text.split('').map(letter => `<span class="letter-hover">${letter === ' ' ? '&nbsp;' : letter}</span>`).join(''); }
+            }
+            wrapLetters('#hero-title-1');
+            wrapLetters('#hero-title-2');
+            wrapLetters('#global-tracking-title');
+        }
+        function setupMainDashboardCharts() {
+            const fraudulentRecords = ALL_COMPANIES_DATA.filter(r => r.True_Label === 'fraudulent');
+            const routeCounts = fraudulentRecords.reduce((acc, record) => { const route = record.Planned_Route; acc[route] = (acc[route] || 0) + 1; return acc; }, {});
+            const sortedRoutes = Object.entries(routeCounts).sort(([,a],[,b]) => b-a).slice(0, 7);
+            const routeLabels = sortedRoutes.map(([route]) => route);
+            const routeData = sortedRoutes.map(([,count]) => count);
+            if (riskByRouteChartInstance) riskByRouteChartInstance.destroy();
+            const riskCtx = document.getElementById('risk-by-route-chart').getContext('2d');
+            riskByRouteChartInstance = new Chart(riskCtx, { type: 'bar', data: { labels: routeLabels, datasets: [{ label: 'Fraudulent Shipments', data: routeData, backgroundColor: CHART_COLORS.slice(2), borderColor: '#161b22', borderWidth: 2, hoverBorderColor: '#f97316', hoverBorderWidth: 3 }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, animation: true, scales: { x: { ticks: { color: '#c9d1d9' }, grid: { color: '#30363d' } }, y: { ticks: { color: '#c9d1d9' }, grid: { display: false } } }, plugins: { legend: { display: false } } } });
+            const fraudTypes = { 'Route Deviations': 0, 'Timestamp Mismatches': 0, 'Invoice Mismatches': 0, 'Inventory Mismatches': 0, 'Customer Complaints': 0 };
+            fraudulentRecords.forEach(r => { if (r.Planned_Route !== r.Actual_Route) fraudTypes['Route Deviations']++; if (r.Planned_Timestamp !== r.Actual_Timestamp) fraudTypes['Timestamp Mismatches']++; if (r.Generated_Invoice_ID !== r.Delivered_Invoice_ID) fraudTypes['Invoice Mismatches']++; if (r.Expected_Warehouse !== r.Actual_Warehouse) fraudTypes['Inventory Mismatches']++; if (r.Customer_Complaint !== 'No Complaint') fraudTypes['Customer Complaints']++; });
+            if (fraudTypeDistChartInstance) fraudTypeDistChartInstance.destroy();
+            const fraudTypeCtx = document.getElementById('fraud-type-distribution-chart').getContext('2d');
+            fraudTypeDistChartInstance = new Chart(fraudTypeCtx, { type: 'doughnut', data: { labels: Object.keys(fraudTypes), datasets: [{ data: Object.values(fraudTypes), backgroundColor: CHART_COLORS, borderColor: '#161b22', borderWidth: 4, hoverOffset: 15 }] }, options: { responsive: true, maintainAspectRatio: false, animation: { animateScale: true }, plugins: { legend: { position: 'bottom', labels: { color: '#c9d1d9'} }, datalabels: { display: false } } } });
+        }
+        function setupAllCompaniesButton() { document.getElementById('list-all-btn').addEventListener('click', showAllCompaniesList); }
+        function setupAnalysisKeywords() {
+            const container = document.getElementById('analysis-keywords');
+            const keywords = ["Authorised", "Unauthorised", "Route Deviations", "Invoice Mismatch", "Inventory Mismatch", "Timestamp Mismatch", "Customer Complaints"];
+            keywords.forEach(keyword => { const button = document.createElement('button'); button.className = 'search-tag text-xs py-1 px-3 rounded-full'; button.textContent = keyword; button.addEventListener('click', () => showAnalysisView(keyword.toLowerCase().replace(/ /g, '-'))); container.appendChild(button); });
+        }
+        function setupAutocomplete() {
+            const searchInput = document.getElementById('company-search');
+            const autocompleteContainer = document.getElementById('autocomplete-container');
+            const companyNames = [...new Set(ALL_COMPANIES_DATA.map(d => d.Company_Name))];
+            searchInput.addEventListener('input', () => {
+                const value = searchInput.value.toLowerCase();
+                autocompleteContainer.innerHTML = '';
+                if (!value) return;
+                const filteredCompanies = companyNames.filter(c => c.toLowerCase().startsWith(value));
+                filteredCompanies.forEach(company => { const item = document.createElement('div'); item.className = 'suggestion-item'; item.textContent = company; item.addEventListener('click', () => { searchInput.value = company; autocompleteContainer.innerHTML = ''; }); autocompleteContainer.appendChild(item); });
+            });
+            document.addEventListener('click', (e) => { if (!e.target.closest('.relative')) autocompleteContainer.innerHTML = ''; });
+        }
+        function setupPopularSearches() {
+            const container = document.getElementById('popular-searches');
+            const searchInput = document.getElementById('company-search');
+            const companyNames = [...new Set(ALL_COMPANIES_DATA.map(d => d.Company_Name))];
+            companyNames.slice(0, 8).forEach(company => { const button = document.createElement('button'); button.className = 'search-tag text-xs py-1 px-3 rounded-full'; button.textContent = company; button.addEventListener('click', () => { searchInput.value = company; searchInput.focus(); }); container.appendChild(button); });
+        }
+        function setupValidation() {
+            const validateBtn = document.getElementById('validate-btn');
+            const searchInput = document.getElementById('company-search');
+            const errorMessage = document.getElementById('error-message');
+            const companyNames = [...new Set(ALL_COMPANIES_DATA.map(d => d.Company_Name))];
+            validateBtn.addEventListener('click', () => { const companyName = searchInput.value; if (companyNames.includes(companyName)) { errorMessage.textContent = ''; showCompanyInsights(companyName); } else { errorMessage.textContent = 'Company not found. Please select a valid company.'; } });
+        }
+        function setupBackButton() {
+            document.querySelectorAll('.back-to-main-btn').forEach(button => {
+                button.addEventListener('click', () => {
+                    document.getElementById('insights-section').classList.add('hidden');
+                    document.getElementById('all-companies-section').classList.add('hidden');
+                    document.getElementById('analysis-section').classList.add('hidden');
+                    document.getElementById('ml-insights-section').classList.add('hidden');
+                    document.getElementById('main-content').classList.remove('hidden');
+                    document.getElementById('company-search').value = '';
+                });
+            });
+        }
+        // --- THIS FUNCTION WAS MISSING - IT IS NOW ADDED BACK ---
+        function showMlInsights(dataset = 'all') {
+            document.getElementById('main-content').classList.add('hidden');
+            document.getElementById('insights-section').classList.add('hidden');
+            document.getElementById('all-companies-section').classList.add('hidden');
+            document.getElementById('analysis-section').classList.add('hidden');
+            document.getElementById('ml-insights-section').classList.remove('hidden');
+            window.scrollTo(0, 0);
+
+            // Clustering view is removed, so we only handle classification
+            document.getElementById('ml-classification-view').classList.remove('hidden');
+            displayClassificationMlMetrics(dataset);
+        }
+        // ---------------------------------------------------------
+        function showAllCompaniesList() {
+            document.getElementById('main-content').classList.add('hidden');
+            document.getElementById('insights-section').classList.add('hidden');
+            document.getElementById('analysis-section').classList.add('hidden');
+            document.getElementById('ml-insights-section').classList.add('hidden');
+            document.getElementById('all-companies-section').classList.remove('hidden');
+            window.scrollTo(0, 0);
+            const tableBody = document.getElementById('all-companies-table-body');
+            tableBody.innerHTML = '';
+            const companyNames = [...new Set(ALL_COMPANIES_DATA.map(d => d.Company_Name))];
+            const unauthorizedCompanies = [...new Set(ALL_COMPANIES_DATA.filter(d => d.Company_License === 'N/A').map(d => d.Company_Name))];
+            const companySummaries = companyNames.map(name => {
+                const companyData = ALL_COMPANIES_DATA.filter(d => d.Company_Name === name);
+                const total = companyData.length;
+                const fraudCount = companyData.filter(d => d.True_Label === 'fraudulent').length;
+                const routeAdherence = 100 - (companyData.filter(r => r.Planned_Route !== r.Actual_Route).length / total * 100);
+                const onTimeDelivery = companyData.filter(r => r.Planned_Timestamp === r.Actual_Timestamp).length / total * 100;
+                const invoiceAccuracy = companyData.filter(r => r.Generated_Invoice_ID === r.Delivered_Invoice_ID).length / total * 100;
+                const inventoryAccuracy = companyData.filter(r => r.Expected_Warehouse === r.Actual_Warehouse).length / total * 100;
+                const complaintFree = 100 - (companyData.filter(r => r.Customer_Complaint !== 'No Complaint').length / total * 100);
+                return { name: name, license: companyData[0].Company_License, isAuthorized: !unauthorizedCompanies.includes(name), fraudPercentage: (fraudCount / total) * 100, reliabilityScore: (routeAdherence + onTimeDelivery + invoiceAccuracy + inventoryAccuracy + complaintFree) / 5 };
+            });
+            companySummaries.sort((a, b) => b.fraudPercentage - a.fraudPercentage);
+            companySummaries.forEach(summary => { let riskStatus, riskClass; if (summary.fraudPercentage > 40) { riskStatus = 'Critical'; riskClass = 'risk-critical'; } else if (summary.fraudPercentage > 25) { riskStatus = 'High'; riskClass = 'risk-high'; } else if (summary.fraudPercentage > 10) { riskStatus = 'Medium'; riskClass = 'risk-medium'; } else { riskStatus = 'Low'; riskClass = 'risk-low'; } const authStatusText = summary.isAuthorized ? summary.license : 'Unauthorized'; const authStatusClass = summary.isAuthorized ? 'text-gray-300' : 'text-red-400'; const reliabilityScoreClass = summary.reliabilityScore > 90 ? 'text-green-400' : summary.reliabilityScore > 75 ? 'text-yellow-400' : 'text-orange-400'; tableBody.innerHTML += `<tr><td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">${summary.name}</td><td class="px-6 py-4 whitespace-nowrap text-sm font-semibold ${authStatusClass}">${authStatusText}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${summary.fraudPercentage.toFixed(2)}%</td><td class="px-6 py-4 whitespace-nowrap text-sm font-semibold"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${riskClass}">${riskStatus}</span></td><td class="px-6 py-4 whitespace-nowrap text-sm font-bold ${reliabilityScoreClass}">${summary.reliabilityScore.toFixed(1)} / 100</td></tr>`; });
+        }
+        function showAnalysisView(analysisType) {
+            document.getElementById('main-content').classList.add('hidden');
+            document.getElementById('insights-section').classList.add('hidden');
+            document.getElementById('all-companies-section').classList.add('hidden');
+            document.getElementById('ml-insights-section').classList.add('hidden');
+            document.getElementById('analysis-section').classList.remove('hidden');
+            window.scrollTo(0, 0);
+            if (analysisPieChartInstance) analysisPieChartInstance.destroy();
+            if (analysisBarChartInstance) analysisBarChartInstance.destroy();
+            const analysisHeader = document.getElementById('analysis-header');
+            const tableHead = document.getElementById('analysis-table-head');
+            const tableBody = document.getElementById('analysis-table-body');
+            const pieChartTitle = document.getElementById('analysis-pie-chart-title');
+            const barChartTitle = document.getElementById('analysis-bar-chart-title');
+            tableHead.innerHTML = ''; tableBody.innerHTML = ''; let headers = []; let rowsHTML = '';
+            const companyNames = [...new Set(ALL_COMPANIES_DATA.map(d => d.Company_Name))];
+            const unauthorizedCompanies = [...new Set(ALL_COMPANIES_DATA.filter(d => d.Company_License === 'N/A').map(d => d.Company_Name))];
+            const allSummaries = companyNames.map(name => { const data = ALL_COMPANIES_DATA.filter(d => d.Company_Name === name); const total = data.length; return { name, total, fraudCount: data.filter(d => d.True_Label === 'fraudulent').length, isAuthorized: !unauthorizedCompanies.includes(name), license: data[0].Company_License, routeDeviations: data.filter(r => r.Planned_Route !== r.Actual_Route).length, invoiceMismatches: data.filter(r => r.Generated_Invoice_ID !== r.Delivered_Invoice_ID).length, inventoryMismatches: data.filter(r => r.Expected_Warehouse !== r.Actual_Warehouse).length, timestampMismatches: data.filter(r => r.Planned_Timestamp !== r.Actual_Timestamp).length, customerComplaints: data.filter(r => r.Customer_Complaint !== 'No Complaint').length, }; });
+            switch (analysisType) {
+                case 'authorised':
+                case 'unauthorised':
+                    analysisHeader.textContent = analysisType === 'authorised' ? 'Authorised Companies' : 'Unauthorised Companies';
+                    headers = ['Company Name', 'License/Status', 'Fraud %', 'Risk Status'];
+                    const filtered = allSummaries.filter(s => s.isAuthorized === (analysisType === 'authorised'));
+                    filtered.sort((a, b) => b.fraudCount - a.fraudCount);
+                    pieChartTitle.textContent = 'Company Authorization Status';
+                    const authCount = companyNames.length - unauthorizedCompanies.length;
+                    const unauthCount = unauthorizedCompanies.length;
+                    createAnalysisPieChart(['Authorised', 'Unauthorised'], [authCount, unauthCount]);
+                    barChartTitle.textContent = `Top Fraudulent ${analysisType === 'authorised' ? 'Authorised' : 'Unauthorised'} Companies`;
+                    const topTen = filtered.slice(0, 10);
+                    createAnalysisBarChart(topTen.map(c => c.name), topTen.map(c => (c.fraudCount / c.total * 100)), 'Fraud %');
+                    rowsHTML = filtered.map(s => { const fraudPercentage = (s.fraudCount / s.total * 100); let riskStatus, riskClass; if (fraudPercentage > 40) { riskStatus = 'Critical'; riskClass = 'risk-critical'; } else if (fraudPercentage > 25) { riskStatus = 'High'; riskClass = 'risk-high'; } else if (fraudPercentage > 10) { riskStatus = 'Medium'; riskClass = 'risk-medium'; } else { riskStatus = 'Low'; riskClass = 'risk-low'; } const status = s.isAuthorized ? s.license : 'Unauthorized'; const statusClass = s.isAuthorized ? 'text-gray-300' : 'text-red-400'; return `<tr><td class="px-6 py-4 text-sm font-medium text-white">${s.name}</td><td class="px-6 py-4 text-sm font-semibold ${statusClass}">${status}</td><td class="px-6 py-4 text-sm text-gray-300">${fraudPercentage.toFixed(2)}%</td><td class="px-6 py-4 text-sm"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${riskClass}">${riskStatus}</span></td></tr>`; }).join('');
+                    break;
+                default:
+                    const keyMap = { 'route-deviations': { title: 'Route Deviations', key: 'routeDeviations', unit: 'Deviations'}, 'invoice-mismatch': { title: 'Invoice Mismatches', key: 'invoiceMismatches', unit: 'Mismatches'}, 'inventory-mismatch': { title: 'Inventory Mismatches', key: 'inventoryMismatches', unit: 'Mismatches'}, 'timestamp-mismatch': { title: 'Timestamp Mismatches', key: 'timestampMismatches', unit: 'Late Deliveries'}, 'customer-complaints': { title: 'Customer Complaints', key: 'customerComplaints', unit: 'Complaints'}, };
+                    const config = keyMap[analysisType];
+                    analysisHeader.textContent = `Analysis: ${config.title}`;
+                    headers = ['Company Name', `${config.unit} Count`, 'Incident Rate %'];
+                    allSummaries.sort((a, b) => b[config.key] - a[config.key]);
+                    rowsHTML = allSummaries.map(s => { const count = s[config.key]; const percentage = (count / s.total * 100).toFixed(2); return `<tr><td class="px-6 py-4 text-sm font-medium text-white">${s.name}</td><td class="px-6 py-4 text-sm text-gray-300">${count}</td><td class="px-6 py-4 text-sm text-gray-300">${percentage}%</td></tr>`; }).join('');
+                    barChartTitle.textContent = `Top 10 by ${config.title}`;
+                    const topOffenders = allSummaries.slice(0, 10);
+                    createAnalysisBarChart(topOffenders.map(c => c.name), topOffenders.map(c => c[config.key]), `Count of ${config.unit}`);
+                    pieChartTitle.textContent = `${config.title} Distribution`;
+                    const top5 = allSummaries.slice(0, 5);
+                    const top5Sum = top5.reduce((acc, company) => acc + company[config.key], 0);
+                    const othersSum = allSummaries.slice(5).reduce((acc, company) => acc + company[config.key], 0);
+                    const pieLabels = [...top5.map(c => c.name), 'Others'];
+                    const pieData = [...top5.map(c => c[config.key]), othersSum];
+                    createAnalysisPieChart(pieLabels, pieData);
+                    break;
+            }
+            tableHead.innerHTML = `<tr class="text-left text-xs font-medium text-gray-400 uppercase tracking-wider">${headers.map(h => `<th class="px-6 py-3">${h}</th>`).join('')}</tr>`;
+            tableBody.innerHTML = rowsHTML;
+        }
+        function createAnalysisPieChart(labels, data) { const pieCtx = document.getElementById('analysis-pie-chart').getContext('2d'); analysisPieChartInstance = new Chart(pieCtx, { type: 'pie', data: { labels: labels, datasets: [{ data: data, backgroundColor: CHART_COLORS, borderColor: '#161b22', borderWidth: 4, hoverOffset: 15 }] }, options: { responsive: true, maintainAspectRatio: false, animation: { animateScale: true }, plugins: { legend: { position: 'bottom', labels: { color: '#c9d1d9'} }, datalabels: { color: '#fff', font: { weight: 'bold' } } } } }); }
+        function createAnalysisBarChart(labels, data, label) { const barCtx = document.getElementById('analysis-bar-chart').getContext('2d'); analysisBarChartInstance = new Chart(barCtx, { type: 'bar', data: { labels: labels, datasets: [{ label: label, data: data, backgroundColor: CHART_COLORS.slice(2), borderRadius: 4, borderColor: '#161b22', borderWidth: 2, hoverBorderColor: '#f97316', hoverBorderWidth: 3 }] }, options: { responsive: true, maintainAspectRatio: false, animation: true, scales: { y: { beginAtZero: true, ticks: { color: '#c9d1d9' }, grid: { color: '#30363d' } }, x: { ticks: { color: '#c9d1d9' }, grid: { display: false } } }, plugins: { legend: { display: false } } } }); }
+        function showCompanyInsights(companyName) {
+            currentCompanyName = companyName;
+            currentCompanyData = ALL_COMPANIES_DATA.filter(row => row.Company_Name === companyName);
+            document.getElementById('main-content').classList.add('hidden');
+            document.getElementById('all-companies-section').classList.add('hidden');
+            document.getElementById('analysis-section').classList.add('hidden');
+            document.getElementById('ml-insights-section').classList.add('hidden');
+            document.getElementById('insights-section').classList.remove('hidden');
+            window.scrollTo(0, 0);
+            document.getElementById('company-header').textContent = `Insights for ${companyName}`;
+            displayKPIs(currentCompanyData);
+            displayCharts(currentCompanyData);
+            displayTable(currentCompanyData);
+        }
+        function setKpiValue(elementId, value, unit, thresholds) { const el = document.getElementById(elementId); el.textContent = `${value}${unit}`; el.classList.remove('positive', 'negative', 'neutral'); if (value >= thresholds.positive) el.classList.add('positive'); else if (value <= thresholds.negative) el.classList.add('negative'); else el.classList.add('neutral'); }
+        function displayKPIs(data) {
+            const total = data.length;
+            const isAuthorized = data[0].Company_License !== 'N/A';
+            const authEl = document.getElementById('auth-status');
+            const authLabelEl = document.getElementById('auth-status-label');
+            if (isAuthorized) { authLabelEl.textContent = 'License ID'; authEl.textContent = data[0].Company_License; authEl.className = 'kpi-value mt-1 text-2xl font-semibold positive'; } else { authLabelEl.textContent = 'Authorization Status'; authEl.textContent = 'Unauthorized'; authEl.className = 'kpi-value mt-1 text-3xl font-semibold negative'; }
+            const routeDeviations = data.filter(r => r.Planned_Route !== r.Actual_Route).length;
+            setKpiValue('route-adherence', (100 - (routeDeviations / total * 100)).toFixed(1), '%', { positive: 95, negative: 85 });
+            const onTime = data.filter(r => r.Planned_Timestamp === r.Actual_Timestamp).length;
+            setKpiValue('on-time-delivery', (onTime / total * 100).toFixed(1), '%', { positive: 90, negative: 75 });
+            const invoiceMatches = data.filter(r => r.Generated_Invoice_ID === r.Delivered_Invoice_ID).length;
+            setKpiValue('invoice-accuracy', (invoiceMatches / total * 100).toFixed(1), '%', { positive: 98, negative: 90 });
+            const warehouseMatches = data.filter(r => r.Expected_Warehouse === r.Actual_Warehouse).length;
+            setKpiValue('inventory-accuracy', (warehouseMatches / total * 100).toFixed(1), '%', { positive: 97, negative: 90 });
+            const complaints = data.filter(r => r.Customer_Complaint !== 'No Complaint').length;
+            setKpiValue('complaint-rate', (complaints / total * 100).toFixed(1), '%', { positive: 5, negative: 15 });
+        }
+        function displayCharts(data) {
+            if (pieChartInstance) pieChartInstance.destroy();
+            if (barChartInstance) barChartInstance.destroy();
+            if (lineChartInstance) lineChartInstance.destroy();
+            if (issuesLineChartInstance) issuesLineChartInstance.destroy();
+            const fraudCount = data.filter(r => r.True_Label === 'fraudulent').length;
+            const pieCtx = document.getElementById('fraud-pie-chart').getContext('2d');
+            pieChartInstance = new Chart(pieCtx, { type: 'pie', data: { labels: ['Legitimate', 'Fraudulent'], datasets: [{ data: [data.length - fraudCount, fraudCount], backgroundColor: [CHART_COLORS[0], CHART_COLORS[1]], borderColor: '#161b22', borderWidth: 4, hoverOffset: 15 }] }, options: { responsive: true, maintainAspectRatio: false, animation: { animateScale: true, animateRotate: true }, plugins: { legend: { position: 'bottom', labels: { color: '#c9d1d9', boxWidth: 15, padding: 20 } }, datalabels: { formatter: (value, ctx) => { let sum = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0); let percentage = (value * 100 / sum).toFixed(1) + "%"; return `${value}\n(${percentage})`; }, color: '#fff', font: { weight: 'bold', size: 14, }, textAlign: 'center', } } } });
+            const incidents = { 'Route Deviations': data.filter(r => r.Planned_Route !== r.Actual_Route).length, 'Late Deliveries': data.filter(r => r.Planned_Timestamp !== r.Actual_Timestamp).length, 'Invoice Errors': data.filter(r => r.Generated_Invoice_ID !== r.Delivered_Invoice_ID).length, 'Warehouse Errors': data.filter(r => r.Expected_Warehouse !== r.Actual_Warehouse).length, 'Complaints': data.filter(r => r.Customer_Complaint !== 'No Complaint').length };
+            const barCtx = document.getElementById('incident-bar-chart').getContext('2d');
+            barChartInstance = new Chart(barCtx, { type: 'bar', data: { labels: Object.keys(incidents), datasets: [{ label: 'Count', data: Object.values(incidents), backgroundColor: [CHART_COLORS[2], CHART_COLORS[3], CHART_COLORS[4], CHART_COLORS[5], CHART_COLORS[6]], borderRadius: 4, hoverBorderColor: '#f97316', hoverBorderWidth: 3 }] }, options: { responsive: true, maintainAspectRatio: false, animation: true, scales: { y: { beginAtZero: true, ticks: { color: '#c9d1d9' }, grid: { color: '#30363d' } }, x: { ticks: { color: '#c9d1d9' }, grid: { display: false } } }, plugins: { legend: { display: false } } } });
+            const monthlyFraud = Array(12).fill(0);
+            data.forEach(row => { if (row.True_Label === 'fraudulent') monthlyFraud[new Date(row.Date).getMonth()]++; });
+            const lineCtx = document.getElementById('fraud-line-chart').getContext('2d');
+            lineChartInstance = new Chart(lineCtx, { type: 'line', data: { labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], datasets: [{ label: 'Fraudulent Incidents', data: monthlyFraud, borderColor: CHART_COLORS[1], backgroundColor: 'rgba(239, 68, 68, 0.1)', fill: true, tension: 0.4 }] }, options: { responsive: true, maintainAspectRatio: false, animation: true, scales: { y: { beginAtZero: true, ticks: { color: '#c9d1d9' }, grid: { color: '#30363d' } }, x: { ticks: { color: '#c9d1d9' }, grid: { color: '#30363d' } } }, plugins: { legend: { labels: { color: '#c9d1d9'} } } } });
+            const monthlyIssues = { 'Route Deviations': Array(12).fill(0), 'Late Deliveries': Array(12).fill(0), 'Invoice Errors': Array(12).fill(0) };
+            // --- THIS IS THE FINAL TYPO FIX ---
+            data.forEach(row => { const month = new Date(row.Date).getMonth(); if (row.Planned_Route !== row.Actual_Route) monthlyIssues['Route Deviations'][month]++; if (row.Planned_Timestamp !== row.Actual_Timestamp) monthlyIssues['Late Deliveries'][month]++; if (row.Generated_Invoice_ID !== row.Delivered_Invoice_ID) monthlyIssues['Invoice Errors'][month]++; });
+            const issuesLineCtx = document.getElementById('issues-line-chart').getContext('2d');
+            issuesLineChartInstance = new Chart(issuesLineCtx, { type: 'line', data: { labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], datasets: [ { label: 'Route Deviations', data: monthlyIssues['Route Deviations'], borderColor: CHART_COLORS[2], tension: 0.4, fill: false }, { label: 'Late Deliveries', data: monthlyIssues['Late Deliveries'], borderColor: CHART_COLORS[3], tension: 0.4, fill: false }, { label: 'Invoice Errors', data: monthlyIssues['Invoice Errors'], borderColor: CHART_COLORS[4], tension: 0.4, fill: false }, ] }, options: { responsive: true, maintainAspectRatio: false, animation: true, scales: { y: { beginAtZero: true, ticks: { color: '#c9d1d9' }, grid: { color: '#30363d' } }, x: { ticks: { color: '#c9d1d9' }, grid: { color: '#30363d' } } }, plugins: { legend: { labels: { color: '#c9d1d9'} } } } });
+        }
+        function getFilteredData(data) {
+            const filterValue = document.getElementById('shipment-filter').value;
+            if (filterValue === 'fraudulent') return data.filter(row => row.True_Label === 'fraudulent');
+            if (filterValue === 'authorized') return data.filter(row => row.True_Label === 'authorized');
+            if (filterValue === 'best-rated') { return data.filter(r => r.Planned_Route === r.Actual_Route && r.Planned_Timestamp === r.Actual_Timestamp && r.Generated_Invoice_ID === r.Delivered_Invoice_ID && r.Expected_Warehouse === r.Actual_Warehouse && r.Customer_Complaint === 'No Complaint' && r.True_Label === 'authorized'); }
+            return data;
+        }
+        function displayTable(data) {
+            const tableBody = document.getElementById('shipments-table-body');
+            tableBody.innerHTML = '';
+            const filteredData = getFilteredData(data);
+            filteredData.forEach(row => { const isFraud = row.True_Label === 'fraudulent'; const statusClass = isFraud ? 'text-red-400' : 'text-green-400'; tableBody.innerHTML += `<tr><td class="px-6 py-4 whitespace-nowrap text-sm text-white">${row.Shipment_ID}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${row.Date}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${row.Origin}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${row.Destination}</td><td class="px-6 py-4 whitespace-nowrap text-sm font-semibold ${statusClass}">${isFraud ? 'Fraudulent' : 'Authorized'}</td></tr>`; });
+        }
+        function downloadPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.setFontSize(20);
+            doc.text(`Shipment Report for ${currentCompanyName}`, 14, 22);
+            doc.setFontSize(12);
+            doc.text("Key Performance Indicators:", 14, 40);
+            const kpis = [ ["Status", document.getElementById('auth-status-label').textContent === 'License ID' ? document.getElementById('auth-status').textContent : 'Unauthorized'], ["Route Adherence", document.getElementById('route-adherence').textContent], ["On-Time Delivery", document.getElementById('on-time-delivery').textContent], ["Invoice Accuracy", document.getElementById('invoice-accuracy').textContent], ["Inventory Accuracy", document.getElementById('inventory-accuracy').textContent], ["Complaint Rate", document.getElementById('complaint-rate').textContent], ];
+            doc.autoTable({ startY: 45, head: [['Metric', 'Value']], body: kpis, theme: 'striped', headStyles: { fillColor: [41, 128, 185] }, });
+            const tableData = getFilteredData(currentCompanyData).map(row => [ row.Shipment_ID, row.Date, row.Origin, row.Destination, row.True_Label ]);
+            doc.autoTable({ startY: doc.lastAutoTable.finalY + 10, head: [['Shipment ID', 'Date', 'Origin', 'Destination', 'Status']], body: tableData, theme: 'grid', });
+            doc.save(`${currentCompanyName}_Report.pdf`);
+        }
+        function downloadCSV() {
+            const filteredData = getFilteredData(currentCompanyData);
+            if(filteredData.length === 0) return;
+            const headers = Object.keys(filteredData[0]);
+            const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...filteredData.map(row => headers.map(header => `"${row[header]}"`).join(','))].join('\n');
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `${currentCompanyName}_Shipments.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        async function fetchNews() {
+            const newsContainer = document.getElementById('news-container');
+            try {
+                const response = await fetch('/api/news');
+                if (!response.ok) throw new Error('Failed to fetch news');
+                const sampleNews = await response.json();
+                newsContainer.innerHTML = '';
+                sampleNews.forEach(article => { newsContainer.innerHTML += `<a href="${article.link}" target="_blank" rel="noopener noreferrer" class="news-card group block"><img src="${article.imgSrc}" alt="News Image" class="news-card-image"><div class="news-card-overlay"></div><div class="news-card-content"><h5 class="font-bold text-white text-sm">${article.title}</h5><p class="news-card-description text-xs text-gray-300 mt-1">${article.description}</p></div></a>`; });
+            } catch (error) {
+                console.error('Error fetching news:', error);
+                newsContainer.innerHTML = '<p class="col-span-full">Could not load news articles.</p>';
+            }
+        }
+        async function displayClassificationMlMetrics(dataset = 'all') {
+            if (featureImportanceChartInstance) featureImportanceChartInstance.destroy();
+            try {
+                const response = await fetch(`/api/ml_metrics/classification/${dataset}`);
+                if (!response.ok) { const err = await response.json(); throw new Error(err.error || `Failed to get metrics for ${dataset}`); }
+                const metrics = await response.json();
+                document.getElementById('ml-dataset-size').textContent = metrics.size.toLocaleString();
+                document.getElementById('ml-accuracy').textContent = metrics.accuracy;
+                document.getElementById('ml-precision').textContent = metrics.precision;
+                document.getElementById('ml-recall').textContent = metrics.recall;
+                document.getElementById('ml-f1-score').textContent = metrics.f1Score;
+                document.getElementById('cm-tn').querySelector('.text-3xl').textContent = metrics.cm.tn;
+                document.getElementById('cm-fp').querySelector('.text-3xl').textContent = metrics.cm.fp;
+                document.getElementById('cm-fn').querySelector('.text-3xl').textContent = metrics.cm.fn;
+                document.getElementById('cm-tp').querySelector('.text-3xl').textContent = metrics.cm.tp;
+                const reportBody = document.getElementById('classification-report-body');
+                const reportData = metrics.report.map(row => { return `<tr class="text-sm text-gray-300"><td class="px-6 py-4 font-semibold text-white">${row.class}</td><td class="px-6 py-4">${Number(row.precision).toFixed(2)}</td><td class="px-6 py-4">${Number(row.recall).toFixed(2)}</td><td class="px-6 py-4">${Number(row['f1-score'] || row.f1).toFixed(2)}</td><td class="px-6 py-4">${row.support.toLocaleString()}</td></tr>`; }).join('');
+                reportBody.innerHTML = reportData;
+                const fiCtx = document.getElementById('feature-importance-chart').getContext('2d');
+                featureImportanceChartInstance = new Chart(fiCtx, { type: 'bar', data: { labels: Object.keys(metrics.features), datasets: [{ label: 'Importance', data: Object.values(metrics.features).map(v => Number(v).toFixed(2)), backgroundColor: CHART_COLORS, borderColor: '#161b22', borderWidth: 2, hoverBorderColor: '#f97316', hoverBorderWidth: 3 }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, animation: true, scales: { x: { ticks: { color: '#c9d1d9' }, grid: { color: '#30363d' } }, y: { ticks: { color: '#c9d1d9' }, grid: { display: false } } }, plugins: { legend: { display: false } } } });
+            } catch (error) { console.error('Error displaying classification metrics:', error); }
+        }
+    </script>
+</body>
+</html>
